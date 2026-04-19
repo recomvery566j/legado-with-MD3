@@ -13,8 +13,11 @@ import io.legado.app.data.repository.ExploreRepository
 import io.legado.app.data.repository.ExploreRepositoryImpl
 import io.legado.app.data.repository.ReadRecordRepository
 import io.legado.app.data.repository.RemoteBookRepository
+import io.legado.app.data.repository.SearchRepository
+import io.legado.app.data.repository.SearchRepositoryImpl
 import io.legado.app.data.repository.SearchContentRepository
 import io.legado.app.data.repository.UploadRepository
+import io.legado.app.domain.usecase.ExploreKindUiUseCase
 import io.legado.app.help.coil.CoverFetcher
 import io.legado.app.help.coil.CoverInterceptor
 import io.legado.app.help.http.okHttpClient
@@ -29,6 +32,7 @@ import io.legado.app.ui.book.import.local.ImportBookViewModel
 import io.legado.app.ui.book.import.remote.RemoteBookViewModel
 import io.legado.app.ui.book.info.BookInfoViewModel
 import io.legado.app.ui.book.readRecord.ReadRecordViewModel
+import io.legado.app.ui.book.search.SearchViewModel
 import io.legado.app.ui.book.searchContent.SearchContentViewModel
 import io.legado.app.ui.book.toc.TocViewModel
 import io.legado.app.ui.book.toc.rule.TxtTocRuleViewModel
@@ -64,9 +68,11 @@ val appModule = module {
     singleOf(::BookGroupRepository)
     singleOf(::SearchContentRepository)
     singleOf(::RemoteBookRepository)
+    singleOf(::ExploreKindUiUseCase)
 
     single<UploadRepository> { DirectLinkUploadRepository() }
     single<ExploreRepository> { ExploreRepositoryImpl(get()) }
+    single<SearchRepository> { SearchRepositoryImpl(get()) }
 
     single<ImageLoader> {
         ImageLoader.Builder(get())
@@ -109,6 +115,7 @@ val appModule = module {
     viewModelOf(::ChangeBookSourceViewModel)
     viewModelOf(::ExploreViewModel)
     viewModelOf(::RssViewModel)
+    viewModelOf(::SearchViewModel)
 
     viewModel { (route: ReplaceEditRoute) ->
         ReplaceEditViewModel(

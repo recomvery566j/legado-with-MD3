@@ -11,11 +11,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import io.legado.app.ui.config.themeConfig.ThemeConfig
+import io.legado.app.ui.theme.LegadoTheme
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.ThemeController
 
@@ -132,37 +132,7 @@ fun AppTheme(
             MiuixTheme(controller = controller) {
                 val miuixStyles = MiuixTheme.textStyles
                 val legadoTypography = remember(miuixStyles) {
-                    LegadoTypography(
-                        headlineLarge = miuixStyles.title1,
-                        headlineLargeEmphasized = miuixStyles.title1.emphasized(),
-                        headlineMedium = miuixStyles.title2,
-                        headlineMediumEmphasized = miuixStyles.title2.emphasized(),
-                        headlineSmall = miuixStyles.title3,
-                        headlineSmallEmphasized = miuixStyles.title3.emphasized(),
-
-
-                        titleLarge = miuixStyles.headline1,
-                        titleLargeEmphasized = miuixStyles.headline1.emphasized(),
-                        titleMedium = miuixStyles.headline2,
-                        titleMediumEmphasized = miuixStyles.headline2.emphasized(),
-                        titleSmall = miuixStyles.subtitle,
-                        titleSmallEmphasized = miuixStyles.subtitle.emphasized(),
-
-
-                        bodyLarge = miuixStyles.paragraph,
-                        bodyLargeEmphasized = miuixStyles.paragraph.emphasized(),
-                        bodyMedium = miuixStyles.body1,
-                        bodyMediumEmphasized = miuixStyles.body1.emphasized(),
-                        bodySmall = miuixStyles.body2,
-                        bodySmallEmphasized = miuixStyles.body2.emphasized(),
-
-                        labelLarge = miuixStyles.button,
-                        labelLargeEmphasized = miuixStyles.button.emphasized(),
-                        labelMedium = miuixStyles.footnote1,
-                        labelMediumEmphasized = miuixStyles.footnote1.emphasized(),
-                        labelSmall = miuixStyles.footnote2,
-                        labelSmallEmphasized = miuixStyles.footnote2.emphasized()
-                    )
+                    miuixStylesToM3Typography(miuixStyles).toLegadoTypography()
                 }
 
                 val miuixColorScheme = MiuixTheme.colorScheme
@@ -210,7 +180,8 @@ fun AppTheme(
                         surfaceContainer = miuixColorScheme.surfaceContainer,
                         surfaceContainerHigh = miuixColorScheme.surfaceContainerHigh,
                         surfaceContainerHighest = miuixColorScheme.surfaceContainerHighest,
-                        surfaceContainerLow = miuixColorScheme.secondaryContainer,
+                        surfaceContainerLow = miuixColorScheme.secondaryContainer.copy(alpha = 0.32f)
+                            .compositeOver(miuixColorScheme.surface),
                         surfaceContainerLowest = miuixColorScheme.background,
 
                         primaryFixed = miuixColorScheme.primaryContainer,
@@ -226,8 +197,10 @@ fun AppTheme(
                         onTertiaryFixed = miuixColorScheme.onTertiaryContainer,
                         onTertiaryFixedVariant = miuixColorScheme.onTertiaryContainer,
 
-                        cardContainer = miuixColorScheme.disabledPrimary,
-                        onCardContainer = miuixColorScheme.primary
+                        cardContainer = miuixColorScheme.primaryContainer.copy(alpha = 0.32f)
+                            .compositeOver(miuixColorScheme.surfaceContainer),
+                        onCardContainer = miuixColorScheme.primary,
+                        onSheetContent = miuixColorScheme.surface.copy(alpha = 0.5f),
                     )
                 }
 
@@ -260,37 +233,4 @@ fun AppTheme(
             }
         }
     }
-}
-
-private fun Typography.toLegadoTypography(): LegadoTypography {
-    return LegadoTypography(
-        headlineLarge = headlineLarge,
-        headlineLargeEmphasized = headlineLargeEmphasized,
-        headlineMedium = headlineMedium,
-        headlineMediumEmphasized = headlineMediumEmphasized,
-        headlineSmall = headlineSmall,
-        headlineSmallEmphasized = headlineSmallEmphasized,
-        titleLarge = titleLarge,
-        titleLargeEmphasized = titleLargeEmphasized,
-        titleMedium = titleMedium,
-        titleMediumEmphasized = titleMediumEmphasized,
-        titleSmall = titleSmall,
-        titleSmallEmphasized = titleSmallEmphasized,
-        bodyLarge = bodyLarge,
-        bodyLargeEmphasized = bodyLargeEmphasized,
-        bodyMedium = bodyMedium,
-        bodyMediumEmphasized = bodyMediumEmphasized,
-        bodySmall = bodySmall,
-        bodySmallEmphasized = bodySmallEmphasized,
-        labelLarge = labelLarge,
-        labelLargeEmphasized = labelLargeEmphasized,
-        labelMedium = labelMedium,
-        labelMediumEmphasized = labelMediumEmphasized,
-        labelSmall = labelSmall,
-        labelSmallEmphasized = labelSmallEmphasized
-    )
-}
-
-private fun TextStyle.emphasized(): TextStyle {
-    return copy(fontWeight = FontWeight.Medium)
 }
