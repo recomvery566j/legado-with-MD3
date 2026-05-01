@@ -32,11 +32,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,12 +47,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
 import io.legado.app.data.entities.RssSource
 import io.legado.app.ui.login.SourceLoginActivity
-import io.legado.app.ui.rss.article.RssSortActivity
 import io.legado.app.ui.rss.favorites.RssFavoritesActivity
-import io.legado.app.ui.rss.read.ReadRssActivity
 import io.legado.app.ui.rss.source.edit.RssSourceEditActivity
 import io.legado.app.ui.rss.source.manage.RssSourceActivity
 import io.legado.app.ui.rss.subscription.RuleSubActivity
@@ -58,7 +59,7 @@ import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.adaptiveContentPadding
 import io.legado.app.ui.widget.components.SourceIcon
 import io.legado.app.ui.widget.components.alert.AppAlertDialog
-import io.legado.app.ui.widget.components.button.TopBarActionButton
+import io.legado.app.ui.widget.components.topbar.TopBarActionButton
 import io.legado.app.ui.widget.components.divider.PillDivider
 import io.legado.app.ui.widget.components.divider.PillHeaderDivider
 import io.legado.app.ui.widget.components.list.ListScaffold
@@ -68,32 +69,40 @@ import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenuItem
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.utils.openUrl
 import io.legado.app.utils.startActivity
+import kotlinx.coroutines.flow.collectLatest
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RssScreen(
-    viewModel: RssViewModel = koinViewModel()
+    viewModel: RssViewModel = koinViewModel(),
+    onOpenSort: (sourceUrl: String, sortUrl: String?, key: String?) -> Unit,
+    onOpenRead: (title: String?, origin: String, link: String?, openUrl: String?) -> Unit
 ) {
     val context = LocalContext.current
-    val uiState by viewModel.uiState.collectAsState()
-    var sourceToDelete by remember { mutableStateOf<RssSource?>(null) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var sourceToDeleteUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    val sourceToDelete = remember(sourceToDeleteUrl, uiState.items) {
+        uiState.items.firstOrNull { it.sourceUrl == sourceToDeleteUrl }
+    }
+    val currentContext by rememberUpdatedState(context)
+    val currentOnOpenSort by rememberUpdatedState(onOpenSort)
+    val currentOnOpenRead by rememberUpdatedState(onOpenRead)
 
-    val openRss: (RssSource) -> Unit = { rssSource ->
-        if (rssSource.singleUrl) {
-            viewModel.getSingleUrl(rssSource) { url ->
-                if (url.startsWith("http", true)) {
-                    context.startActivity<ReadRssActivity> {
-                        putExtra("title", rssSource.sourceName)
-                        putExtra("origin", url)
-                    }
-                } else {
-                    context.openUrl(url)
+    LaunchedEffect(viewModel) {
+        viewModel.effects.collectLatest { effect ->
+            when (effect) {
+                is RssEffect.OpenSort -> {
+                    currentOnOpenSort(effect.sourceUrl, effect.sortUrl, effect.key)
                 }
-            }
-        } else {
-            context.startActivity<RssSortActivity> {
-                putExtra("url", rssSource.sourceUrl)
+
+                is RssEffect.OpenRead -> {
+                    currentOnOpenRead(effect.title, effect.origin, effect.link, effect.openUrl)
+                }
+
+                is RssEffect.OpenExternalUrl -> {
+                    currentContext.openUrl(effect.url)
+                }
             }
         }
     }
@@ -114,7 +123,7 @@ fun RssScreen(
     ListScaffold(
         title = stringResource(R.string.rss),
         state = uiState,
-        subtitle = uiState.group.ifEmpty { "全部" },
+        subtitle = uiState.group.ifEmpty { stringResource(R.string.all) },
         onBackClick = null,
         onSearchToggle = { viewModel.toggleSearchVisible(it) },
         onSearchQueryChange = { viewModel.search(it) },
@@ -137,7 +146,7 @@ fun RssScreen(
                     context.startActivity<RssSourceActivity>()
                     dismiss()
                 },
-                text = "订阅源管理"
+                text = stringResource(R.string.rss_feed_management),
             )
             PillDivider()
             RoundDropdownMenuItem(
@@ -172,10 +181,10 @@ fun RssScreen(
                 RssSourceGridItem(
                     modifier = Modifier.animateItem(),
                     source = source,
-                    onClick = { openRss(source) },
+                    onClick = { viewModel.openSource(source) },
                     onTop = { viewModel.topSource(source) },
                     onEdit = { edit(source) },
-                    onDelete = { sourceToDelete = source },
+                    onDelete = { sourceToDeleteUrl = source.sourceUrl },
                     onDisable = { viewModel.disable(source) },
                     onLogin = { login(source) }
                 )
@@ -185,15 +194,15 @@ fun RssScreen(
 
     AppAlertDialog(
         data = sourceToDelete,
-        onDismissRequest = { sourceToDelete = null },
+        onDismissRequest = { sourceToDeleteUrl = null },
         title = stringResource(R.string.draw),
         confirmText = stringResource(R.string.yes),
         onConfirm = { source ->
             viewModel.del(source)
-            sourceToDelete = null
+            sourceToDeleteUrl = null
         },
         dismissText = stringResource(R.string.no),
-        onDismiss = { sourceToDelete = null }
+        onDismiss = { sourceToDeleteUrl = null }
     )
 }
 

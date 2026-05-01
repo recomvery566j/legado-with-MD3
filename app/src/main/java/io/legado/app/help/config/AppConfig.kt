@@ -9,12 +9,10 @@ import io.legado.app.ui.book.manga.config.MangaScrollMode
 import io.legado.app.utils.canvasrecorder.CanvasRecorderFactory
 import io.legado.app.utils.getPrefBoolean
 import io.legado.app.utils.getPrefInt
-import io.legado.app.utils.getPrefLong
 import io.legado.app.utils.getPrefString
 import io.legado.app.utils.isNightMode
 import io.legado.app.utils.putPrefBoolean
 import io.legado.app.utils.putPrefInt
-import io.legado.app.utils.putPrefLong
 import io.legado.app.utils.putPrefString
 import io.legado.app.utils.removePref
 import io.legado.app.utils.sysConfiguration
@@ -305,17 +303,6 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
             }
         }
 
-    // 书籍保存位置
-    var defaultBookTreeUri: String?
-        get() = appCtx.getPrefString(PreferKey.defaultBookTreeUri)
-        set(value) {
-            if (value.isNullOrEmpty()) {
-                appCtx.removePref(PreferKey.defaultBookTreeUri)
-            } else {
-                appCtx.putPrefString(PreferKey.defaultBookTreeUri, value)
-            }
-        }
-
     val showDiscovery: Boolean
         get() = appCtx.getPrefBoolean(PreferKey.showDiscovery, true)
 
@@ -341,12 +328,6 @@ object AppConfig : SharedPreferences.OnSharedPreferenceChangeListener {
         get() = appCtx.getPrefInt(PreferKey.threadCount, 16)
         set(value) {
             appCtx.putPrefInt(PreferKey.threadCount, value)
-        }
-
-    var remoteServerId: Long
-        get() = appCtx.getPrefLong(PreferKey.remoteServerId)
-        set(value) {
-            appCtx.putPrefLong(PreferKey.remoteServerId, value)
         }
 
     // 添加本地选择的目录

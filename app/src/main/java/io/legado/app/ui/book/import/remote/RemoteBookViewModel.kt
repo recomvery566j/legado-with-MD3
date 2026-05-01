@@ -1,5 +1,6 @@
 package io.legado.app.ui.book.import.remote
 
+import io.legado.app.ui.config.otherConfig.OtherConfig
 import android.app.Application
 import androidx.core.net.toUri
 import androidx.compose.runtime.Immutable
@@ -14,12 +15,11 @@ import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.Server
 import io.legado.app.data.repository.RemoteBookRepository
 import io.legado.app.exception.NoStackTraceException
-import io.legado.app.help.AppWebDav
-import io.legado.app.help.config.AppConfig
 import io.legado.app.model.analyzeRule.CustomUrl
 import io.legado.app.model.localBook.LocalBook
 import io.legado.app.model.remote.RemoteBook
 import io.legado.app.model.remote.RemoteBookWebDav
+import io.legado.app.ui.config.importBookConfig.ImportBookConfig
 import io.legado.app.ui.widget.components.list.InteractionState
 import io.legado.app.ui.widget.components.list.ListUiState
 import io.legado.app.ui.widget.components.list.SelectableItem
@@ -28,6 +28,7 @@ import io.legado.app.utils.ArchiveUtils
 import io.legado.app.utils.ConvertUtils
 import io.legado.app.utils.FileDoc
 import io.legado.app.utils.find
+import io.legado.app.utils.isUri
 import io.legado.app.utils.takePersistablePermissionSafely
 import io.legado.app.utils.toastOnUi
 import kotlinx.coroutines.Dispatchers
@@ -68,7 +69,7 @@ data class RemoteBookUiState(
     val sortKey: RemoteBookSort = RemoteBookSort.Default,
     val sortAscending: Boolean = false,
     val servers: List<Server> = emptyList(),
-    val selectedServerId: Long = AppConfig.remoteServerId
+    val selectedServerId: Long = ImportBookConfig.remoteServerId
 ) : ListUiState<RemoteBookItemUi> {
     override val isSearch: Boolean get() = interaction.isSearchMode
     override val isLoading: Boolean get() = interaction.isLoading
@@ -122,7 +123,7 @@ class RemoteBookViewModel(
         val selectedIds: Set<String> = emptySet(),
         val remoteBookWebDav: RemoteBookWebDav? = null,
         val isDefaultWebdav: Boolean = false,
-        val selectedServerId: Long = AppConfig.remoteServerId
+        val selectedServerId: Long = ImportBookConfig.remoteServerId
     )
 
     private val _state = MutableStateFlow(InternalState())
@@ -161,13 +162,13 @@ class RemoteBookViewModel(
     private fun onBookFolderPicked(uri: android.net.Uri?) {
         uri ?: return
         uri.takePersistablePermissionSafely(context)
-        AppConfig.defaultBookTreeUri = uri.toString()
+        OtherConfig.defaultBookTreeUri = uri.toString()
     }
 
     val uiState: StateFlow<RemoteBookUiState> = combine(
         _state,
         repository.flowLocalBooks(),
-        appDb.serverDao.observeAll()
+        repository.flowServers()
     ) { state, localBooks, servers ->
         val localFileNames = localBooks.map { it.originName }.toSet()
 
@@ -212,18 +213,18 @@ class RemoteBookViewModel(
     fun initData(onSuccess: () -> Unit) {
         viewModelScope.launch {
             try {
-                val webDav = repository.createWebDav(AppConfig.remoteServerId)
+                val webDav = repository.createWebDav(ImportBookConfig.remoteServerId)
                 if (webDav != null) {
                     _state.update {
                         it.copy(
                             remoteBookWebDav = webDav,
                             isDefaultWebdav = false,
-                            selectedServerId = AppConfig.remoteServerId
+                            selectedServerId = ImportBookConfig.remoteServerId
                         )
                     }
                     onSuccess()
                 } else {
-                    val defaultWebDav = AppWebDav.defaultBookWebDav
+                    val defaultWebDav = repository.getDefaultBookWebDav()
                         ?: throw NoStackTraceException("webDav没有配置")
                     _state.update {
                         it.copy(
@@ -281,7 +282,7 @@ class RemoteBookViewModel(
             _state.update { it.copy(selectedIds = emptySet()) }
             Result.success(Unit)
         } catch (e: SecurityException) {
-            _effects.emit(RemoteBookEffect.RequestBookFolderPicker())
+            _effects.emit(RemoteBookEffect.RequestBookFolderPicker(defaultBookTreeUri()))
             Result.failure(e)
         } catch (e: Exception) {
             AppLog.put("导入出错\n${e.localizedMessage}", e)
@@ -418,14 +419,14 @@ class RemoteBookViewModel(
                 return@launch
             }
 
-            val bookTreeUri = AppConfig.defaultBookTreeUri
+            val bookTreeUri = defaultBookTreeUri()
             if (bookTreeUri == null) {
-                _effects.emit(RemoteBookEffect.RequestBookFolderPicker())
+                _effects.emit(RemoteBookEffect.RequestBookFolderPicker(defaultBookTreeUri()))
                 return@launch
             }
 
             val downloadArchiveFileDoc = withContext(Dispatchers.IO) {
-                FileDoc.fromUri(bookTreeUri.toUri(), true)
+                FileDoc.fromUri(bookTreeUri, true)
                     .find(downloadFileName)
             }
             if (downloadArchiveFileDoc == null) {
@@ -494,11 +495,17 @@ class RemoteBookViewModel(
         }
     }
 
+    private fun defaultBookTreeUri(): android.net.Uri? {
+        return OtherConfig.defaultBookTreeUri
+            ?.takeIf { it.isUri() }
+            ?.toUri()
+    }
+
     fun saveServer(server: Server) {
         execute {
-            appDb.serverDao.insert(server)
+            repository.saveServer(server)
         }.onSuccess {
-            if (AppConfig.remoteServerId == server.id) {
+            if (ImportBookConfig.remoteServerId == server.id) {
                 initData { loadRemoteBookList() }
             }
         }
@@ -506,12 +513,12 @@ class RemoteBookViewModel(
 
     fun deleteServer(server: Server) {
         execute {
-            appDb.serverDao.delete(server)
+            repository.deleteServer(server)
         }
     }
 
     fun selectServer(serverId: Long) {
-        AppConfig.remoteServerId = serverId
+        ImportBookConfig.remoteServerId = serverId
         _state.update { it.copy(selectedServerId = serverId, dirList = emptyList()) }
         initData { loadRemoteBookList() }
     }

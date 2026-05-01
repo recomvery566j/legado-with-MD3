@@ -39,16 +39,11 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material.icons.outlined.CloudSync
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -67,12 +62,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.legado.app.R
 import io.legado.app.constant.AppConst
 import io.legado.app.data.entities.Server
-import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.dialogs.alert
 import io.legado.app.lib.dialogs.selector
 import io.legado.app.model.remote.RemoteBook
@@ -80,11 +73,14 @@ import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.widget.components.ActionItem
 import io.legado.app.ui.widget.components.AppRadioButton
 import io.legado.app.ui.widget.components.AppTextField
-import io.legado.app.ui.widget.components.EmptyMessageView
+import io.legado.app.ui.widget.components.EmptyMessage
 import io.legado.app.ui.widget.components.SelectionActions
 import io.legado.app.ui.widget.components.alert.AppAlertDialog
+import io.legado.app.ui.widget.components.button.ConfirmDismissButtonsRow
+import io.legado.app.ui.widget.components.button.MediumIconButton
 import io.legado.app.ui.widget.components.button.SmallIconButton
 import io.legado.app.ui.widget.components.button.SmallTonalIconButton
+import io.legado.app.ui.widget.components.topbar.TopBarActionButton
 import io.legado.app.ui.widget.components.card.GlassCard
 import io.legado.app.ui.widget.components.card.SelectionItemCard
 import io.legado.app.ui.widget.components.card.TextCard
@@ -93,8 +89,6 @@ import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenuItem
 import io.legado.app.ui.widget.components.modalBottomSheet.AppModalBottomSheet
 import io.legado.app.ui.widget.components.text.AppText
 import io.legado.app.utils.ConvertUtils
-import io.legado.app.utils.FileDoc
-import io.legado.app.utils.isUri
 import io.legado.app.utils.startActivityForBook
 import io.legado.app.utils.toastOnUi
 import org.json.JSONObject
@@ -173,9 +167,10 @@ fun RemoteBookScreen(
         },
         endAction = if (showSheet is RemoteBookSheet.Servers) {
             {
-                IconButton(onClick = { showSheet = RemoteBookSheet.ServerConfig(null) }) {
-                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add))
-                }
+                MediumIconButton(
+                    onClick = { showSheet = RemoteBookSheet.ServerConfig(null) },
+                    imageVector = Icons.Default.Add
+                )
             }
         } else {
             null
@@ -220,10 +215,7 @@ fun RemoteBookScreen(
             when (effect) {
                 is RemoteBookEffect.OpenBook -> context.startActivityForBook(effect.book)
                 is RemoteBookEffect.RequestBookFolderPicker -> {
-                    selectDocTree.launch(
-                        effect.initialUri
-                            ?: AppConfig.defaultBookTreeUri?.takeIf { it.isUri() }?.toUri()
-                    )
+                    selectDocTree.launch(effect.initialUri)
                 }
 
                 is RemoteBookEffect.ShowArchiveEntries -> {
@@ -265,9 +257,11 @@ fun RemoteBookScreen(
         onSearchQueryChange = { viewModel.dispatch(RemoteBookIntent.SearchChange(it)) },
         searchPlaceholder = "搜索",
         topBarActions = {
-            IconButton(onClick = { showSheet = RemoteBookSheet.Servers }) {
-                Icon(Icons.Default.Storage, contentDescription = "配置服务器")
-            }
+            TopBarActionButton(
+                onClick = { showSheet = RemoteBookSheet.Servers },
+                imageVector = Icons.Default.Storage,
+                contentDescription = "服务器"
+            )
         },
         dropDownMenuContent = { dismiss ->
             RoundDropdownMenuItem(
@@ -304,6 +298,7 @@ fun RemoteBookScreen(
             )
         },
         selectionActions = SelectionActions(
+            onClearSelection = { viewModel.clearSelection() },
             onSelectAll = { viewModel.dispatch(RemoteBookIntent.SelectAll) },
             onSelectInvert = { viewModel.dispatch(RemoteBookIntent.SelectInvert) },
             primaryAction = ActionItem(
@@ -334,7 +329,7 @@ fun RemoteBookScreen(
                 if (uiState.isLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 } else {
-                    EmptyMessageView(
+                    EmptyMessage(
                         modifier = Modifier
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState()),
@@ -452,7 +447,7 @@ private fun ServerItem(
         } else {
             null
         },
-        containerColor = LegadoTheme.colorScheme.surface,
+        containerColor = LegadoTheme.colorScheme.onSheetContent,
         selectedContainerColor = LegadoTheme.colorScheme.secondaryContainer,
         modifier = modifier
             .fillMaxWidth()
@@ -482,6 +477,7 @@ private fun ServerConfigSheetContent(
         AppTextField(
             value = name,
             onValueChange = { name = it },
+            backgroundColor = LegadoTheme.colorScheme.onSheetContent,
             label = "名称",
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -490,6 +486,7 @@ private fun ServerConfigSheetContent(
         AppTextField(
             value = url,
             onValueChange = { url = it },
+            backgroundColor = LegadoTheme.colorScheme.onSheetContent,
             label = "URL",
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -498,6 +495,7 @@ private fun ServerConfigSheetContent(
         AppTextField(
             value = username,
             onValueChange = { username = it },
+            backgroundColor = LegadoTheme.colorScheme.onSheetContent,
             label = "用户名",
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
@@ -506,6 +504,7 @@ private fun ServerConfigSheetContent(
         AppTextField(
             value = password,
             onValueChange = { password = it },
+            backgroundColor = LegadoTheme.colorScheme.onSheetContent,
             label = "密码",
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
@@ -522,33 +521,23 @@ private fun ServerConfigSheetContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Row(
+        ConfirmDismissButtonsRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            OutlinedButton(
-                onClick = onCancel,
-                modifier = Modifier.weight(1f)
-            ) {
-                AppText(stringResource(android.R.string.cancel))
-            }
-            Button(
-                onClick = {
-                    val newServer = server?.copy(name = name) ?: Server(name = name)
-                    val newConfig = JSONObject().apply {
-                        put("url", url)
-                        put("username", username)
-                        put("password", password)
-                    }
-                    newServer.config = newConfig.toString()
-                    onSave(newServer)
-                },
-                modifier = Modifier.weight(1f),
-                enabled = name.isNotBlank() && url.isNotBlank()
-            ) {
-                AppText("保存")
-            }
-        }
+            onDismiss = onCancel,
+            onConfirm = {
+                val newServer = server?.copy(name = name) ?: Server(name = name)
+                val newConfig = JSONObject().apply {
+                    put("url", url)
+                    put("username", username)
+                    put("password", password)
+                }
+                newServer.config = newConfig.toString()
+                onSave(newServer)
+            },
+            dismissText = stringResource(android.R.string.cancel),
+            confirmText = "保存",
+            confirmEnabled = name.isNotBlank() && url.isNotBlank()
+        )
     }
 }
 
@@ -570,7 +559,7 @@ private fun PathNavigationBar(
         GlassCard(
             modifier = Modifier.weight(1f),
             containerColor = LegadoTheme.colorScheme.surfaceContainer,
-            shape = MaterialTheme.shapes.medium
+            cornerRadius = 12.dp,
         ) {
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),

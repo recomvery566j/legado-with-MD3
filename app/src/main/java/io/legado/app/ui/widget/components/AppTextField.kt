@@ -3,6 +3,7 @@ package io.legado.app.ui.widget.components
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -22,10 +23,12 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import io.legado.app.ui.theme.LegadoTheme
 import io.legado.app.ui.theme.ThemeResolver
 import io.legado.app.ui.widget.components.text.AppText
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.basic.InputField as MiuixSearchBarInputField
 import top.yukonga.miuix.kmp.basic.TextField as MiuixTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -268,6 +271,96 @@ fun AppTextFieldSurface(
         scrollState = scrollState,
         shape = shape,
         contentPadding = contentPadding,
+        interactionSource = interactionSource
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AppDenseTextField(
+    state: TextFieldState,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    readOnly: Boolean = false,
+    backgroundColor: Color = Color.Unspecified,
+    label: String? = null,
+    labelPosition: TextFieldLabelPosition = TextFieldLabelPosition.Attached(),
+    placeholder: @Composable (() -> Unit)? = null,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    prefix: @Composable (() -> Unit)? = null,
+    suffix: @Composable (() -> Unit)? = null,
+    supportingText: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    inputTransformation: InputTransformation? = null,
+    outputTransformation: OutputTransformation? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    onKeyboardAction: KeyboardActionHandler? = null,
+    lineLimits: TextFieldLineLimits = TextFieldLineLimits.Default,
+    onTextLayout: (Density.(getResult: () -> TextLayoutResult?) -> Unit)? = null,
+    scrollState: ScrollState = rememberScrollState(),
+    shape: Shape = TextFieldDefaults.shape,
+    interactionSource: MutableInteractionSource? = null,
+    miuixUseSearchBarInputField: Boolean = false,
+    miuixSearchBarLabel: String = label ?: "",
+    miuixOnSearch: (String) -> Unit = {},
+) {
+    val isMiuix = ThemeResolver.isMiuixEngine(LegadoTheme.composeEngine)
+    if (isMiuix && miuixUseSearchBarInputField) {
+        MiuixSearchBarInputField(
+            query = state.text.toString(),
+            onQueryChange = { newQuery ->
+                val current = state.text.toString()
+                if (newQuery != current) {
+                    state.edit {
+                        replace(0, length, newQuery)
+                    }
+                }
+            },
+            onSearch = miuixOnSearch,
+            expanded = false,
+            onExpandedChange = {},
+            modifier = modifier.heightIn(min = 45.dp),
+            label = miuixSearchBarLabel,
+            enabled = enabled,
+            leadingIcon = leadingIcon,
+            trailingIcon = trailingIcon,
+            interactionSource = interactionSource
+        )
+        return
+    }
+
+    val denseMinHeight = if (isMiuix) 45.dp else 48.dp
+    val denseBackgroundColor = if (isMiuix && backgroundColor == Color.Unspecified) {
+        MiuixTheme.colorScheme.surfaceContainerHigh
+    } else {
+        backgroundColor
+    }
+
+    AppTextField(
+        state = state,
+        modifier = modifier.heightIn(min = denseMinHeight),
+        enabled = enabled,
+        readOnly = readOnly,
+        backgroundColor = denseBackgroundColor,
+        label = label,
+        labelPosition = labelPosition,
+        placeholder = placeholder,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
+        prefix = prefix,
+        suffix = suffix,
+        supportingText = supportingText,
+        isError = isError,
+        inputTransformation = inputTransformation,
+        outputTransformation = outputTransformation,
+        keyboardOptions = keyboardOptions,
+        onKeyboardAction = onKeyboardAction,
+        lineLimits = lineLimits,
+        onTextLayout = onTextLayout,
+        scrollState = scrollState,
+        shape = shape,
+        contentPadding = PaddingValues(top = 4.dp, bottom = 4.dp, start = 12.dp, end = 12.dp),
         interactionSource = interactionSource
     )
 }

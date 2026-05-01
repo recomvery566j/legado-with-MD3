@@ -66,6 +66,7 @@ object PreferKey {
     const val backupPath = "backupUri"
     const val restoreIgnore = "restoreIgnore"
     const val threadCount = "threadCount"
+    const val cacheBookThreadCount = "cacheBookThreadCount"
     const val webPort = "webPort"
     const val keepLight = "keep_light"
     const val readSliderMode = "read_slider_mode"
@@ -134,6 +135,7 @@ object PreferKey {
     const val doublePageHorizontal = "doubleHorizontalPage"
     const val readUrlOpenInBrowser = "readUrlInBrowser"
     const val defaultBookTreeUri = "defaultBookTreeUri"
+    const val importBookPath = "importBookPath"
     const val checkSource = "checkSource"
     const val uploadRule = "uploadRule"
     const val tocUiUseReplace = "tocUiUseReplace"
@@ -240,6 +242,7 @@ object PreferKey {
     const val bookshelfTitleCenter = "bookshelfTitleCenter"
     const val bookshelfTitleMaxLines = "bookshelfTitleMaxLines"
     const val bookshelfCoverShadow = "bookshelfCoverShadow"
+    const val bookshelfSearchActionDirectToSearch = "bookshelfSearchActionDirectToSearch"
 
     const val exploreLayoutGridLandscape = "exploreLayoutGridLandscape"
 

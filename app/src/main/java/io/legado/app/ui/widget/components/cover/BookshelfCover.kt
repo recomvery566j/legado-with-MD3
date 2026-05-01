@@ -6,13 +6,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Update
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import io.legado.app.ui.theme.LegadoTheme
+import io.legado.app.ui.widget.components.AppLinearProgressIndicator
 import io.legado.app.ui.widget.components.card.TextCard
 
 @Composable
@@ -21,35 +20,37 @@ fun BookshelfCover(
     author: String?,
     path: String?,
     modifier: Modifier = Modifier,
+    coverModifier: Modifier = Modifier.fillMaxWidth(),
     isUpdating: Boolean = false,
     badgeText: String? = null,
     showBadgeDot: Boolean = false,
     leftBottomText: String? = null,
     sourceOrigin: String? = null,
-    onLoadFinish: (() -> Unit)? = null
+    onLoadFinish: (() -> Unit)? = null,
+    showLoadingPlaceholder: Boolean = true,
 ) {
     Box(modifier = modifier) {
-        BookCover(
+        CoilBookCover(
             name = name,
             author = author,
             path = path,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = coverModifier,
             sourceOrigin = sourceOrigin,
-            onLoadFinish = onLoadFinish
+            onLoadFinish = onLoadFinish,
+            showLoadingPlaceholder = showLoadingPlaceholder,
         )
 
         if (!badgeText.isNullOrEmpty()) {
             TextCard(
                 text = badgeText,
                 icon = if (showBadgeDot) Icons.Default.Update else null,
-                backgroundColor = LegadoTheme.colorScheme.cardContainer,
-                contentColor = LegadoTheme.colorScheme.onCardContainer,
+                iconSize = 12.dp,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(2.dp),
                 cornerRadius = 4.dp,
                 horizontalPadding = 4.dp,
-                verticalPadding = 0.dp
+                verticalPadding = 2.dp
             )
         }
 
@@ -63,20 +64,17 @@ fun BookshelfCover(
                     .padding(2.dp),
                 cornerRadius = 4.dp,
                 horizontalPadding = 4.dp,
-                verticalPadding = 0.dp
+                verticalPadding = 2.dp
             )
         }
 
         if (isUpdating) {
-            LinearProgressIndicator(
+            AppLinearProgressIndicator(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 6.dp)
-                    .height(3.dp),
-                color = LegadoTheme.colorScheme.primary,
-                trackColor = LegadoTheme.colorScheme.primary.copy(alpha = 0.2f),
-                strokeCap = StrokeCap.Round
+                    .height(3.dp)
             )
         }
     }

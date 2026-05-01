@@ -21,9 +21,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import io.legado.app.ui.theme.adaptiveHorizontalPadding
-import io.legado.app.ui.widget.components.SearchBarSection
-import io.legado.app.ui.widget.components.button.TopBarActionButton
-import io.legado.app.ui.widget.components.button.TopBarNavigationButton
+import io.legado.app.ui.widget.components.SearchBar
+import io.legado.app.ui.widget.components.icon.AppIcon
+import io.legado.app.ui.widget.components.topbar.TopBarActionButton
+import io.legado.app.ui.widget.components.topbar.TopBarNavigationButton
 import io.legado.app.ui.widget.components.icon.AppIcons
 import io.legado.app.ui.widget.components.list.ListUiState
 import io.legado.app.ui.widget.components.menuItem.RoundDropdownMenu
@@ -37,8 +38,11 @@ fun <T> DynamicTopAppBar(
     state: ListUiState<T>,
     scrollBehavior: GlassTopAppBarScrollBehavior,
     onBackClick: (() -> Unit)? = null,
+    backNavigationIcon: ImageVector = AppIcons.Back,
+    showSearchAction: Boolean = true,
     onSearchToggle: (Boolean) -> Unit,
     onSearchQueryChange: (String) -> Unit,
+    onSearchSubmit: (String) -> Unit = {},
     searchPlaceholder: String,
     searchLeadingIcon: ImageVector = Icons.Default.Search,
     searchTrailingIcon: @Composable (() -> Unit)? = null,
@@ -66,18 +70,20 @@ fun <T> DynamicTopAppBar(
             if (isSelecting || onBackClick != null) {
                 TopBarNavigationButton(
                     onClick = { if (isSelecting) onClearSelection() else onBackClick?.invoke() },
-                    imageVector = if (isSelecting) AppIcons.Close else AppIcons.Back,
+                    imageVector = if (isSelecting) AppIcons.Close else backNavigationIcon,
                     contentDescription = if (isSelecting) "取消选择" else "返回"
                 )
             }
         },
         actions = {
             if (!isSelecting) {
-                TopBarActionButton(
-                    onClick = { onSearchToggle(!state.isSearch) },
-                    imageVector = Icons.Default.Search,
-                    contentDescription = "搜索"
-                )
+                if (showSearchAction) {
+                    TopBarActionButton(
+                        onClick = { onSearchToggle(!state.isSearch) },
+                        imageVector = AppIcons.Search,
+                        contentDescription = "搜索"
+                    )
+                }
 
                 topBarActions()
 
@@ -107,10 +113,17 @@ fun <T> DynamicTopAppBar(
                 enter = expandVertically() + fadeIn(),
                 exit = shrinkVertically() + fadeOut()
             ) {
-                SearchBarSection(
+                SearchBar(
                     query = state.searchKey,
                     onQueryChange = onSearchQueryChange,
+                    onSearch = onSearchSubmit,
                     placeholder = searchPlaceholder,
+                    leadingIcon = {
+                        AppIcon(
+                            imageVector = searchLeadingIcon,
+                            contentDescription = null
+                        )
+                    },
                     trailingIcon = searchTrailingIcon,
                     dropdownMenu = searchDropdownMenu
                 )

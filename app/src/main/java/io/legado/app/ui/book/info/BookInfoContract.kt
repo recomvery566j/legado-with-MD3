@@ -4,6 +4,8 @@ import android.net.Uri
 import io.legado.app.data.entities.Book
 import io.legado.app.data.entities.BookChapter
 import io.legado.app.data.entities.BookSource
+import io.legado.app.data.entities.readRecord.ReadRecordTimelineDay
+import io.legado.app.domain.usecase.ChangeSourceMigrationOptions
 
 data class BookInfoUiState(
     val book: Book? = null,
@@ -11,10 +13,15 @@ data class BookInfoUiState(
     val webFiles: List<BookInfoWebFile> = emptyList(),
     val kindLabels: List<String> = emptyList(),
     val groupNames: String? = null,
+    val hasCustomGroup: Boolean = false,
+    val readRecordTotalTime: Long = 0L,
+    val readRecordTimelineDays: List<ReadRecordTimelineDay> = emptyList(),
     val inBookshelf: Boolean = false,
     val bookSource: BookSource? = null,
     val isTocLoading: Boolean = true,
     val isBusy: Boolean = false,
+    val deleteAlertEnabled: Boolean = true,
+    val deleteOriginal: Boolean = false,
     val showAppLogSheet: Boolean = false,
     val sheet: BookInfoSheet = BookInfoSheet.None,
     val dialog: BookInfoDialog? = null,
@@ -25,6 +32,7 @@ sealed interface BookInfoSheet {
     data object CoverPicker : BookInfoSheet
     data object GroupPicker : BookInfoSheet
     data object SourcePicker : BookInfoSheet
+    data object ReadRecord : BookInfoSheet
     data class WebFiles(val openAfterImport: Boolean) : BookInfoSheet
     data class ArchiveEntries(
         val archiveUri: Uri,
@@ -34,7 +42,6 @@ sealed interface BookInfoSheet {
 }
 
 sealed interface BookInfoDialog {
-    data object AddToShelfOnBack : BookInfoDialog
     data class DeleteBook(val isLocal: Boolean) : BookInfoDialog
     data class EditRemark(val remark: String?) : BookInfoDialog
     data class PhotoPreview(val path: String) : BookInfoDialog
@@ -52,7 +59,6 @@ data class BookInfoWebFile(
 }
 
 sealed interface BookInfoIntent {
-    data object BackPressed : BookInfoIntent
     data object DismissSheet : BookInfoIntent
     data object DismissDialog : BookInfoIntent
     data object DismissAppLogSheet : BookInfoIntent
@@ -67,8 +73,8 @@ sealed interface BookInfoIntent {
     data object CoverLongClick : BookInfoIntent
     data object GroupClick : BookInfoIntent
     data object ChangeSourceClick : BookInfoIntent
+    data object ReadRecordClick : BookInfoIntent
     data object RemarkClick : BookInfoIntent
-    data object ConfirmBackAddToShelf : BookInfoIntent
     data class ConfirmDelete(val deleteOriginal: Boolean) : BookInfoIntent
     data class UpdateRemark(val remark: String) : BookInfoIntent
     data class SelectGroup(val groupId: Long) : BookInfoIntent
@@ -77,6 +83,7 @@ sealed interface BookInfoIntent {
         val source: BookSource,
         val book: Book,
         val toc: List<BookChapter>,
+        val options: ChangeSourceMigrationOptions,
     ) : BookInfoIntent
     data class AddSourceAsNewBook(
         val book: Book,
@@ -140,6 +147,7 @@ enum class BookInfoMenuAction {
     Upload,
     SyncRemote,
     Refresh,
+    ReadRecord,
     Login,
     Top,
     SetSourceVariable,

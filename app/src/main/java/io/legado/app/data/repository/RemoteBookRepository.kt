@@ -4,11 +4,12 @@ import io.legado.app.constant.AppConst
 import io.legado.app.constant.BookType
 import io.legado.app.data.AppDatabase
 import io.legado.app.data.entities.Book
+import io.legado.app.data.entities.Server
 import io.legado.app.exception.NoStackTraceException
 import io.legado.app.help.AppWebDav
 import io.legado.app.help.book.getRemoteUrl
 import io.legado.app.help.book.isLocal
-import io.legado.app.help.config.AppConfig
+import io.legado.app.ui.config.importBookConfig.ImportBookConfig
 import io.legado.app.lib.webdav.Authorization
 import io.legado.app.model.analyzeRule.AnalyzeUrl
 import io.legado.app.model.analyzeRule.CustomUrl
@@ -32,7 +33,7 @@ class RemoteBookRepository(
             }
         }
 
-        val currentServerId = AppConfig.remoteServerId
+        val currentServerId = ImportBookConfig.remoteServerId
         if (currentServerId != AppConst.DEFAULT_WEBDAV_ID) {
             appDb.serverDao.get(currentServerId)?.getWebDavConfig()?.let {
                 return RemoteBookWebDav(it.url, Authorization(it), currentServerId)
@@ -90,6 +91,10 @@ class RemoteBookRepository(
             }
     }
 
+    fun getDefaultBookWebDav(): RemoteBookWebDav? {
+        return AppWebDav.defaultBookWebDav
+    }
+
     suspend fun loadBooks(
         webDav: RemoteBookWebDav,
         path: String?
@@ -118,6 +123,22 @@ class RemoteBookRepository(
 
     fun flowLocalBooks(): Flow<List<Book>> {
         return appDb.bookDao.flowLocal()
+    }
+
+    fun flowServers(): Flow<List<Server>> {
+        return appDb.serverDao.observeAll()
+    }
+
+    suspend fun getServer(id: Long): Server? {
+        return appDb.serverDao.get(id)
+    }
+
+    suspend fun saveServer(server: Server) {
+        appDb.serverDao.insert(server)
+    }
+
+    suspend fun deleteServer(server: Server) {
+        appDb.serverDao.delete(server)
     }
 
 }

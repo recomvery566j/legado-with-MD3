@@ -7,7 +7,6 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import io.legado.app.R
@@ -16,14 +15,13 @@ import io.legado.app.base.adapter.ItemViewHolder
 import io.legado.app.base.adapter.RecyclerAdapter
 import io.legado.app.constant.AppConst.DEFAULT_WEBDAV_ID
 import io.legado.app.constant.AppLog
-import io.legado.app.data.appDb
 import io.legado.app.data.entities.Server
 import io.legado.app.databinding.DialogRecyclerViewBinding
 import io.legado.app.databinding.ItemServerSelectBinding
-import io.legado.app.help.config.AppConfig
 import io.legado.app.lib.dialogs.alert
 //import io.legado.app.lib.theme.backgroundColor
 //import io.legado.app.lib.theme.primaryColor
+import io.legado.app.ui.config.importBookConfig.ImportBookConfig
 import io.legado.app.ui.widget.recycler.VerticalDivider
 import io.legado.app.utils.applyTint
 import io.legado.app.utils.setLayout
@@ -34,6 +32,7 @@ import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
  * 服务器配置
@@ -42,7 +41,7 @@ class ServersDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
     Toolbar.OnMenuItemClickListener {
 
     val binding by viewBinding(DialogRecyclerViewBinding::bind)
-    val viewModel by viewModels<ServersViewModel>()
+    val viewModel by viewModel<ServersViewModel>()
 
     private val callback get() = (activity as? Callback)
     private val adapter by lazy { ServersAdapter(requireContext()) }
@@ -70,7 +69,7 @@ class ServersDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
         binding.tvFooterLeft.text = getString(R.string.text_default)
         binding.tvFooterLeft.visible()
         binding.tvFooterLeft.setOnClickListener {
-            AppConfig.remoteServerId = DEFAULT_WEBDAV_ID
+            ImportBookConfig.remoteServerId = DEFAULT_WEBDAV_ID
             dismissAllowingStateLoss()
         }
         binding.tvCancel.visible()
@@ -79,14 +78,14 @@ class ServersDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
         }
         binding.tvOk.visible()
         binding.tvOk.setOnClickListener {
-            AppConfig.remoteServerId = adapter.selectServerId
+            ImportBookConfig.remoteServerId = adapter.selectServerId
             dismissAllowingStateLoss()
         }
     }
 
     private fun initData() {
         lifecycleScope.launch {
-            appDb.serverDao.observeAll().catch {
+            viewModel.flowServers().catch {
                 AppLog.put("服务器配置界面获取数据失败\n${it.localizedMessage}", it)
             }.flowOn(IO).collect {
                 adapter.setItems(it)
@@ -109,7 +108,7 @@ class ServersDialog : BaseDialogFragment(R.layout.dialog_recycler_view),
     inner class ServersAdapter(context: Context) :
         RecyclerAdapter<Server, ItemServerSelectBinding>(context) {
 
-        var selectServerId: Long = AppConfig.remoteServerId
+        var selectServerId: Long = ImportBookConfig.remoteServerId
 
         override fun getViewBinding(parent: ViewGroup): ItemServerSelectBinding {
             return ItemServerSelectBinding.inflate(inflater, parent, false)
